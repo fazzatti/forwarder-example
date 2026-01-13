@@ -1,5 +1,5 @@
-import { StrKey } from "stellar-sdk";
 import { Buffer } from "buffer";
+import { ContractId, Ed25519PublicKey, StrKey } from "@colibri/core";
 
 function contractIdToBytes32(contractId: string): Uint8Array {
   return StrKey.decodeContract(contractId);
@@ -21,7 +21,7 @@ function amountToBytes32(amount: bigint): Uint8Array {
 export function buildMessage(
   forwarderId: string,
   amount: bigint,
-  hookData: string
+  hookData: Ed25519PublicKey | ContractId
 ): Buffer {
   const recipient = contractIdToBytes32(forwarderId);
   const destinationCaller = contractIdToBytes32(forwarderId);
