@@ -8,9 +8,11 @@ import { networkConfig } from "./config/env.ts";
 import { readFromJsonFile } from "./utils/io.ts";
 import { loadWasmFile } from "./utils/load-wasm.ts";
 import { buildMessage } from "./utils/build-message.ts";
+import { getArgs } from "./utils/get-args.ts";
 import { DeploymentData } from "./config/types.ts";
-import { Buffer } from "buffer";
 
+const args = getArgs(0, true);
+const encodeAsXdr = args.includes("--xdr");
 const TARGET = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 const AMOUNT = 12345n;
 
@@ -22,8 +24,7 @@ const { assetIssuerSk, forwarderId } = await readFromJsonFile<DeploymentData>(
 
 const issuer = LocalSigner.fromSecret(assetIssuerSk);
 
-const message = buildMessage(forwarderId, AMOUNT, TARGET);
-const attestation = Buffer.from(new Uint8Array(0)); // Empty attestation for testing
+const message = buildMessage(forwarderId, AMOUNT, TARGET, encodeAsXdr);
 
 console.log(chalk.gray(`Forwarder: ${chalk.green(forwarderId)}`));
 console.log(chalk.gray(`Target: ${chalk.green(TARGET)}`));
@@ -47,7 +48,7 @@ const result = await forwarder.invoke({
   method: "forward",
   methodArgs: {
     message: message,
-    attestation: attestation,
+    xdr_hook_data: encodeAsXdr,
   },
   config: {
     source: issuer.publicKey(),

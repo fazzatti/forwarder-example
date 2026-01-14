@@ -1,8 +1,9 @@
 /**
- * Call forwarder.forward() to a G address
+ * Call forwarder.forward() to a M address
  * 1. Create new receiver account
  * 2. Fund via friendbot
  * 3. Add trustline for the asset
+ * 4. Encode in a Muxed
  * 4. Trigger forward
  */
 
@@ -11,6 +12,7 @@ import {
   initializeWithFriendbot,
   LocalSigner,
   PIPE_ClassicTransaction,
+  NativeAccount,
 } from "@colibri/core";
 import { Asset, Operation } from "stellar-sdk";
 import chalk from "chalk";
@@ -25,7 +27,16 @@ const args = getArgs(0, true);
 const encodeAsXdr = args.includes("--xdr");
 const AMOUNT = 12345n;
 
-console.log(chalk.bgBlue.black("\n=== Forward to G-address ===\n"));
+if (!encodeAsXdr) {
+  console.log(
+    chalk.yellow(
+      "\n[forward-m:str] Not supported: M-address with strkey encoding is not supported in this example.\n"
+    )
+  );
+  Deno.exit(1);
+}
+
+console.log(chalk.bgBlue.black("\n=== Forward to M-address ===\n"));
 
 const { assetIssuerSk, forwarderId, assetCode } =
   await readFromJsonFile<DeploymentData>("deployment");
@@ -63,12 +74,13 @@ const res = await classicPipe.run({
 
 console.log(chalk.gray("Trustline added", res.hash));
 
-const message = buildMessage(
-  forwarderId,
-  AMOUNT,
-  receiver.publicKey(),
-  encodeAsXdr
-);
+const muxedAddress = NativeAccount.fromPublicKey(
+  receiver.publicKey()
+).muxedAddress("1234567890");
+
+console.log(chalk.gray(`Muxed Address: ${chalk.green(muxedAddress)}`));
+
+const message = buildMessage(forwarderId, AMOUNT, muxedAddress, encodeAsXdr);
 
 console.log(chalk.gray(`Forwarder: ${chalk.green(forwarderId)}`));
 console.log(chalk.gray(`Target: ${chalk.green(receiver.publicKey())}`));
@@ -88,19 +100,24 @@ await forwarder.loadSpecFromWasm();
 
 console.log(chalk.gray("\nCalling forward()..."));
 
-const result = await forwarder.invoke({
-  method: "forward",
-  methodArgs: {
-    message: message,
-    xdr_hook_data: encodeAsXdr,
-  },
-  config: {
-    source: issuer.publicKey(),
-    fee: "10000",
-    signers: [issuer],
-    timeout: 45,
-  },
-});
+const result = await forwarder
+  .invoke({
+    method: "forward",
+    methodArgs: {
+      message: message,
+      xdr_hook_data: encodeAsXdr,
+    },
+    config: {
+      source: issuer.publicKey(),
+      fee: "10000",
+      signers: [issuer],
+      timeout: 45,
+    },
+  })
+  .catch((err) => {
+    console.error(chalk.red("Error during forward(): "), err);
+    throw err;
+  });
 
 console.log(chalk.bgGreen.black("\n=== Forward Complete ==="));
 console.log("tx hash: ", result.hash);
