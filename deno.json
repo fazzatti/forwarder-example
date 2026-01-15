@@ -1,12 +1,9 @@
 {
   "tasks": {
     "setup": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/setup.ts",
-    "forward:c:str": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-c.ts",
-    "forward:c:xdr": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-c.ts -- --xdr",
-    "forward:g:str": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-g.ts",
-    "forward:g:xdr": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-g.ts -- --xdr",
-    "forward:m:str": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-m.ts",
-    "forward:m:xdr": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-m.ts -- --xdr"
+    "forward:c": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-c.ts",
+    "forward:g": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-g.ts",
+    "forward:m": "deno run --allow-read --allow-write --allow-net --allow-env typescript/src/forward-m.ts"
   },
   "imports": {
     "@colibri/core": "jsr:@colibri/core@^0.15.0",

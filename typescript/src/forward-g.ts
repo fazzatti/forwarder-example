@@ -18,11 +18,8 @@ import { networkConfig } from "./config/env.ts";
 import { readFromJsonFile } from "./utils/io.ts";
 import { loadWasmFile } from "./utils/load-wasm.ts";
 import { buildMessage } from "./utils/build-message.ts";
-import { getArgs } from "./utils/get-args.ts";
 import { DeploymentData } from "./config/types.ts";
 
-const args = getArgs(0, true);
-const encodeAsXdr = args.includes("--xdr");
 const AMOUNT = 12345n;
 
 console.log(chalk.bgBlue.black("\n=== Forward to G-address ===\n"));
@@ -63,12 +60,7 @@ const res = await classicPipe.run({
 
 console.log(chalk.gray("Trustline added", res.hash));
 
-const message = buildMessage(
-  forwarderId,
-  AMOUNT,
-  receiver.publicKey(),
-  encodeAsXdr
-);
+const message = buildMessage(forwarderId, AMOUNT, receiver.publicKey());
 
 console.log(chalk.gray(`Forwarder: ${chalk.green(forwarderId)}`));
 console.log(chalk.gray(`Target: ${chalk.green(receiver.publicKey())}`));
@@ -90,10 +82,7 @@ console.log(chalk.gray("\nCalling forward()..."));
 
 const result = await forwarder.invoke({
   method: "forward",
-  methodArgs: {
-    message: message,
-    xdr_hook_data: encodeAsXdr,
-  },
+  methodArgs: { message: message },
   config: {
     source: issuer.publicKey(),
     fee: "10000",

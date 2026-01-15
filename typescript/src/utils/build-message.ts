@@ -32,23 +32,19 @@ function hookDataToXdr(
  * Header: recipient (32) | destination_caller (32)
  * Body: mint_recipient (32) | amount (32) | hook_data (variable)
  *
- * @param encodeAsXdr - if true, hook_data is XDR encoded ScVal::Address (supports MuxedAddress)
- *                      if false, hook_data is strkey string (G.../C... 56 chars)
+ * @param hookData - hook_data is a strkey string (G.../C.../M...)
  */
 export function buildMessage(
   forwarderId: string,
   amount: bigint,
-  hookData: Ed25519PublicKey | ContractId | MuxedAddress,
-  encodeAsXdr: boolean = false
+  hookData: Ed25519PublicKey | ContractId | MuxedAddress
 ): Buffer {
   const recipient = contractIdToBytes32(forwarderId);
   const destinationCaller = contractIdToBytes32(forwarderId);
   const mintRecipient = contractIdToBytes32(forwarderId);
   const amountBytes = amountToBytes32(amount);
 
-  const hookDataBytes = encodeAsXdr
-    ? hookDataToXdr(hookData)
-    : new TextEncoder().encode(hookData);
+  const hookDataBytes = new TextEncoder().encode(hookData);
 
   const message = new Uint8Array(32 + 32 + 32 + 32 + hookDataBytes.length);
   message.set(recipient, 0);

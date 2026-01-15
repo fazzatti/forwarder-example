@@ -2,21 +2,9 @@
 
 Prototype demonstrating a dummy forwarder contract that receives minted tokens and forwards them to a final recipient specified in hook_data.
 
-## Hook Data Encoding Modes
+## Hook Data
 
-The forwarder contract and scripts support two encoding modes for the recipient in `hook_data`:
-
-- **strkey**: Standard Stellar G.../C.../M... address as string bytes
-- **XDR**: Serialized `ScVal::Address` (supports MuxedAddress, i.e. M...)
-
-The encoding mode is selected via the `--xdr` flag in the TypeScript scripts, or by using the appropriate Deno task variant (see below).
-
-### Muxed Address Support and behavior
-
-- Both parsing helpers now return a `MuxedAddress` (so strkey strings that encode a G/C/M address are converted into a `MuxedAddress`).
-- The contract always forwards using a `MuxedAddress` instance (no duplicate transfer logic).
-- To forward to a muxed (M...) address, prefer the XDR encoding mode (`forward:m:xdr`).
-- The strkey mode for `forward:m` remains unsupported in the example and will exit with a warning when attempted (`forward:m:str`).
+The forwarder contract and scripts expect `hook_data` to contain a Stellar address as string bytes (G/C/M). The parsing helper converts the string into a `MuxedAddress`, and the contract forwards using that `MuxedAddress`.
 
 ## Project Structure
 
@@ -55,23 +43,20 @@ deno task setup
 
 ### Forwarding Tasks
 
-Each script supports both strkey and XDR encoding via Deno tasks:
+Each script supports the strkey string flow via Deno tasks:
 
 - **C address (contract):**
   - strkey: `deno task forward:c:str`
-  - XDR: `deno task forward:c:xdr`
 - **G address (account):**
   - strkey: `deno task forward:g:str`
-  - XDR: `deno task forward:g:xdr`
 - **M address (muxed):**
-  - XDR: `deno task forward:m:xdr`
-  - strkey: `deno task forward:m:str` (not supported, will warn and exit)
+  - strkey: `deno task forward:m:str`
 
 ### Example
 
 ```bash
-# Forward to a muxed address using XDR encoding
-deno task forward:m:xdr
+# Forward to a muxed address (as a muxed string)
+deno task forward:m:str
 
 # Forward to a contract address using strkey encoding
 deno task forward:c:str
@@ -86,6 +71,6 @@ deno task forward:c:str
 
 ## Notes
 
-- Both `parse_hook_data` (strkey) and `parse_hook_data_xdr` (XDR) now yield a `MuxedAddress`, and the contract uses that for the transfer.
+- `parse_hook_data` converts strkey/muxed strings into `MuxedAddress`, and the contract uses that for the transfer.
 - The amount assertion is performed before the transfer.
 - See the scripts in `typescript/src/` for usage details and CLI flags.

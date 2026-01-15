@@ -1,6 +1,5 @@
 use soroban_sdk::{
-    address_payload::AddressPayload, contracttype, xdr::FromXdr, Address, Bytes, BytesN, Env,
-    MuxedAddress,
+    address_payload::AddressPayload, contracttype, Address, Bytes, BytesN, Env, MuxedAddress,
 };
 
 #[contracttype]
@@ -68,10 +67,4 @@ pub fn parse_message(env: &Env, message: &Bytes) -> Message {
 /// Strkey hook_data: G.../C.../M... string bytes
 pub fn parse_hook_data(hook_data: &Bytes) -> MuxedAddress {
     MuxedAddress::from_string_bytes(&hook_data)
-}
-
-/// XDR hook_data: serialized ScVal::Address (from client via to_xdr)
-/// Returns MuxedAddress which can be used for transfer (extracts Address internally)
-pub fn parse_hook_data_xdr(env: &Env, hook_data: &Bytes) -> MuxedAddress {
-    MuxedAddress::from_xdr(env, hook_data).unwrap()
 }

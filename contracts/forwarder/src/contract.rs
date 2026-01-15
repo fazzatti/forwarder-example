@@ -1,4 +1,4 @@
-use crate::message::{parse_hook_data, parse_hook_data_xdr, parse_message};
+use crate::message::{parse_hook_data, parse_message};
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractclient, contractimpl, contracttype, token, vec, Address, Bytes, Env, IntoVal,
@@ -30,53 +30,45 @@ impl Forwarder {
             .set(&DataKey::Transmitter, &transmitter);
     }
 
-    pub fn asset(env: Env) -> Address {
-        env.storage().instance().get(&DataKey::Asset).unwrap()
-    }
-
-    pub fn transmitter(env: Env) -> Address {
-        env.storage().instance().get(&DataKey::Transmitter).unwrap()
-    }
-
     /// Forward tokens to final recipient from hook_data
-    /// xdr_hook_data: if true, hook_data is XDR serialized ScVal::Address (supports MuxedAddress)
-    ///                if false, hook_data is strkey string (G.../C... 56 chars)
-    pub fn forward(env: Env, message: Bytes, xdr_hook_data: bool) {
-        let asset = Self::asset(env.clone());
-        let transmitter_addr = Self::transmitter(env.clone());
+    /// hook_data is expected to be a strkey string representing a C.../G.../M... address.
+    pub fn forward(env: Env, message: Bytes) {
+        let asset = asset(env.clone());
         let token_client = token::Client::new(&env, &asset);
-
         let this_address = env.current_contract_address();
         let balance_before = token_client.balance(&this_address);
 
-        call_transmitter(&env, &transmitter_addr, &message);
+        call_transmitter(&env, &message);
 
         let balance_after = token_client.balance(&this_address);
         let amount_minted = balance_after - balance_before;
 
         let parsed = parse_message(&env, &message);
-        // Determine recipient type (Address or MuxedAddress)
-        let recipient = if xdr_hook_data {
-            parse_hook_data_xdr(&env, &parsed.message_body.hook_data)
-        } else {
-            parse_hook_data(&parsed.message_body.hook_data)
-        };
+        let recipient: MuxedAddress = parse_hook_data(&parsed.message_body.hook_data);
         assert!(
             amount_minted == parsed.message_body.amount,
             "amount mismatch"
         );
-
-        transfer_to_recipient(&env, &asset, &recipient, amount_minted);
+        transfer_to_recipient(&env, &recipient, amount_minted);
     }
 }
 
-fn call_transmitter(env: &Env, transmitter: &Address, message: &Bytes) {
+pub fn asset(env: Env) -> Address {
+    env.storage().instance().get(&DataKey::Asset).unwrap()
+}
+
+pub fn transmitter(env: Env) -> Address {
+    env.storage().instance().get(&DataKey::Transmitter).unwrap()
+}
+
+fn call_transmitter(env: &Env, message: &Bytes) {
+    let transmitter_addr = transmitter(env.clone());
     let attestation = Bytes::new(env);
     env.authorize_as_current_contract(vec![
         env,
         InvokerContractAuthEntry::Contract(SubContractInvocation {
             context: ContractContext {
-                contract: transmitter.clone(),
+                contract: transmitter_addr.clone(),
                 fn_name: Symbol::new(env, "receive_message"),
                 args: (message.clone(), attestation.clone()).into_val(env),
             },
@@ -84,15 +76,11 @@ fn call_transmitter(env: &Env, transmitter: &Address, message: &Bytes) {
         }),
     ]);
 
-    MessageTransmitterClient::new(env, transmitter).receive_message(message, &attestation);
+    MessageTransmitterClient::new(env, &transmitter_addr).receive_message(message, &attestation);
 }
 
-fn transfer_to_recipient(
-    env: &Env,
-    asset: &Address,
-    recipient: &MuxedAddress,
-    amount_minted: i128,
-) {
-    let client = token::Client::new(env, asset);
+fn transfer_to_recipient(env: &Env, recipient: &MuxedAddress, amount_minted: i128) {
+    let asset = asset(env.clone());
+    let client = token::Client::new(env, &asset);
     client.transfer(&env.current_contract_address(), recipient, &amount_minted);
 }
