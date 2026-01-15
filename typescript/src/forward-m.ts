@@ -27,15 +27,6 @@ const args = getArgs(0, true);
 const encodeAsXdr = args.includes("--xdr");
 const AMOUNT = 12345n;
 
-if (!encodeAsXdr) {
-  console.log(
-    chalk.yellow(
-      "\n[forward-m:str] Not supported: M-address with strkey encoding is not supported in this example.\n"
-    )
-  );
-  Deno.exit(1);
-}
-
 console.log(chalk.bgBlue.black("\n=== Forward to M-address ===\n"));
 
 const { assetIssuerSk, forwarderId, assetCode } =

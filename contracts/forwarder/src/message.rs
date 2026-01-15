@@ -65,9 +65,9 @@ pub fn parse_message(env: &Env, message: &Bytes) -> Message {
     }
 }
 
-/// hook_data is a 56-byte strkey (G.../C...)
-pub fn parse_hook_data(hook_data: &Bytes) -> Address {
-    Address::from_string_bytes(&hook_data.slice(0..56))
+/// Strkey hook_data: G.../C.../M... string bytes
+pub fn parse_hook_data(hook_data: &Bytes) -> MuxedAddress {
+    MuxedAddress::from_string_bytes(&hook_data)
 }
 
 /// XDR hook_data: serialized ScVal::Address (from client via to_xdr)
