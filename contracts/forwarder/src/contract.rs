@@ -15,7 +15,7 @@ pub enum DataKey {
 #[allow(dead_code)]
 #[contractclient(name = "MessageTransmitterClient")]
 trait MessageTransmitter {
-    fn receive_message(env: Env, message: Bytes, attestation: Bytes);
+    fn receive_message(env: Env, message: Bytes);
 }
 
 #[contract]
@@ -36,6 +36,7 @@ impl Forwarder {
         let asset = asset(env.clone());
         let token_client = token::Client::new(&env, &asset);
         let this_address = env.current_contract_address();
+
         let balance_before = token_client.balance(&this_address);
 
         call_transmitter(&env, &message);
@@ -63,20 +64,19 @@ pub fn transmitter(env: Env) -> Address {
 
 fn call_transmitter(env: &Env, message: &Bytes) {
     let transmitter_addr = transmitter(env.clone());
-    let attestation = Bytes::new(env);
     env.authorize_as_current_contract(vec![
         env,
         InvokerContractAuthEntry::Contract(SubContractInvocation {
             context: ContractContext {
                 contract: transmitter_addr.clone(),
                 fn_name: Symbol::new(env, "receive_message"),
-                args: (message.clone(), attestation.clone()).into_val(env),
+                args: (message.clone(),).into_val(env),
             },
             sub_invocations: vec![env],
         }),
     ]);
 
-    MessageTransmitterClient::new(env, &transmitter_addr).receive_message(message, &attestation);
+    MessageTransmitterClient::new(env, &transmitter_addr).receive_message(message);
 }
 
 fn transfer_to_recipient(env: &Env, recipient: &MuxedAddress, amount_minted: i128) {

@@ -19,7 +19,7 @@ impl MessageTransmitter {
         env.storage().instance().get(&DataKey::Asset).unwrap()
     }
 
-    pub fn receive_message(env: Env, message: Bytes, _attestation: Bytes) {
+    pub fn receive_message(env: Env, message: Bytes) {
         let msg = parse_message(&env, &message);
 
         // Ensure the destination caller has authorized this call
